@@ -2,60 +2,108 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="UTF-8">
-  <title>活動報名表單</title>
+  <title>活動報名系統</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
   <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
 </head>
-<body style="font-family: sans-serif; padding: 20px">
-  <h2>活動報名</h2>
+<body class="p-4">
+  <div class="container">
+    <h2 class="mb-4">📋 活動報名</h2>
+    <div class="row" id="cards"></div>
+  </div>
 
-  <label>活動名稱：</label><br>
-  <input type="text" id="eventValue" placeholder="輸入活動名稱"><br><br>
+  <!-- Modal -->
+  <div class="modal fade" id="signupModal" tabindex="-1">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <form id="signupForm">
+          <div class="modal-header">
+            <h5 class="modal-title">我要報名</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body">
+            <input type="hidden" id="活動名稱">
+            <div class="mb-3">
+              <label class="form-label">姓名</label>
+              <input type="text" class="form-control" id="姓名" required>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">備註</label>
+              <input type="text" class="form-control" id="備註">
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="submit" class="btn btn-primary">送出報名</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
 
-  <label>姓名：</label><br>
-  <input type="text" id="nameValue" placeholder="輸入姓名"><br><br>
+<script>
+const apiUrl = "https://script.google.com/macros/s/你的ID/exec"; // 換成你的 URL
 
-  <label>備註：</label><br>
-  <input type="text" id="noteValue" placeholder="可填可不填"><br><br>
-
-  <button id="submitBtn">送出報名</button>
-
-  <script>
-    const apiUrl = "https://script.google.com/macros/s/AKfycbyqdI1xgq41EMJeOtjR5LhupiGE9-3DJFo4ORqDuYOJ5h_Bt1OrRDuBzDFeDjYrwYnS/exec"; // ⚠️請改成你自己的 GAS Web App URL
-
-    document.querySelector('#submitBtn').addEventListener('click', function () {
-      let name = document.querySelector('#nameValue').value.trim();
-      let event = document.querySelector('#eventValue').value.trim();
-      let note = document.querySelector('#noteValue').value.trim();
-
-      if (!name || !event) {
-        alert("請填寫活動名稱與姓名");
-        return;
-      }
-
-      $.ajax({
-        url: apiUrl,
-        method: 'GET',
-        data: {
-          name: name,
-          event: event,
-          note: note,
-          status: "已報名"
-        },
-        success: function (response) {
-          if (response === "成功") {
-            alert("報名成功！");
-            document.querySelector('#nameValue').value = "";
-            document.querySelector('#eventValue').value = "";
-            document.querySelector('#noteValue').value = "";
-          } else {
-            alert("回傳訊息：" + response);
-          }
-        },
-        error: function () {
-          alert("送出失敗，請稍後再試");
-        }
-      });
+$(function () {
+  // 載入活動卡片
+  $.getJSON(apiUrl, function (data) {
+    data.forEach(item => {
+      $('#cards').append(`
+        <div class="col-md-6 mb-3">
+          <div class="card h-100 shadow">
+            <div class="card-body">
+              <h5 class="card-title">${item['活動名稱']}</h5>
+              <p class="card-text">
+                🗓 ${item['起始日期']} ${item['起始時間']} ~ ${item['結束日期']} ${item['結束時間']}<br>
+                ⏳ 截止：${item['截止日期']}<br>
+                📍 地點：${item['活動地點']}<br>
+                💰 費用：${item['活動費用']}<br>
+                📋 內容：${item['活動內容']}<br>
+                ⚠️ 注意事項：<br><small>${item['注意事項'].replaceAll('；', '<br>')}</small>
+              </p>
+              <button class="btn btn-success signupBtn" data-title="${item['活動名稱']}" data-bs-toggle="modal" data-bs-target="#signupModal">我要報名</button>
+            </div>
+          </div>
+        </div>
+      `);
     });
-  </script>
+
+    // 點擊「我要報名」時設定活動名稱
+    $('.signupBtn').on('click', function () {
+      $('#活動名稱').val($(this).data('title'));
+    });
+  });
+
+  // 報名表單送出
+  $('#signupForm').submit(function (e) {
+    e.preventDefault();
+    const postData = {
+      name: $('#姓名').val(),
+      event: $('#活動名稱').val(),
+      note: $('#備註').val(),
+      status: "已報名"
+    };
+
+    $.ajax({
+      url: apiUrl,
+      method: 'GET',
+      data: postData,
+      success: function (res) {
+        if (res === "成功") {
+          alert("報名成功！");
+          $('#signupModal').modal('hide');
+          $('#signupForm')[0].reset();
+        } else {
+          alert("錯誤：" + res);
+        }
+      },
+      error: function () {
+        alert("傳送失敗，請稍後再試");
+      }
+    });
+  });
+});
+</script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
