@@ -5,11 +5,12 @@
   <title>活動報名系統</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
   <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
 </head>
 <body class="p-4">
   <div class="container">
-    <h2 class="mb-4">📋 活動報名</h2>
+    <h2 class="mb-4"><i class="fas fa-calendar-check"></i> 活動報名</h2>
     <div class="row" id="cards"></div>
   </div>
 
@@ -42,39 +43,51 @@
   </div>
 
 <script>
-const apiUrl = "https://script.google.com/macros/s/AKfycbyHLyzArJcsWvDWYI6WfaYWZl8SWmV9qCSW-oxo8D31IwvLaGYZ4ac942bMW_GIEEU0/exec"; // 換成你的 URL
+const apiUrl = "https://script.google.com/macros/s/AKfycbyHLyzArJcsWvDWYI6WfaYWZl8SWmV9qCSW-oxo8D31IwvLaGYZ4ac942bMW_GIEEU0/exec";
+
+function isExpired(dateStr) {
+  const now = new Date();
+  const target = new Date(dateStr);
+  target.setHours(23, 59, 59); // 當天結束前可報名
+  return now > target;
+}
 
 $(function () {
-  // 載入活動卡片
   $.getJSON(apiUrl, function (data) {
     data.forEach(item => {
+      const expired = isExpired(item['截止日期']);
+      const disableBtn = expired ? 'disabled' : '';
+      const btnText = expired ? '已截止' : '我要報名';
+
       $('#cards').append(`
-        <div class="col-md-6 mb-3">
+        <div class="col-md-4 mb-4">
           <div class="card h-100 shadow">
             <div class="card-body">
-              <h5 class="card-title">${item['活動名稱']}</h5>
+              <h5 class="card-title"><i class="fas fa-book"></i> ${item['活動名稱']}</h5>
               <p class="card-text">
-                🗓 ${item['起始日期']} ${item['起始時間']} ~ ${item['結束日期']} ${item['結束時間']}<br>
-                ⏳ 截止：${item['截止日期']}<br>
-                📍 地點：${item['活動地點']}<br>
-                💰 費用：${item['活動費用']}<br>
-                📋 內容：${item['活動內容']}<br>
-                ⚠️ 注意事項：<br><small>${item['注意事項'].replaceAll('；', '<br>')}</small>
+                <i class="far fa-calendar-alt"></i> ${item['起始日期']} ${item['起始時間']} ~ ${item['結束日期']} ${item['結束時間']}<br>
+                <i class="fas fa-hourglass-end"></i> 截止：${item['截止日期']}<br>
+                <i class="fas fa-map-marker-alt"></i> ${item['活動地點']}<br>
+                <i class="fas fa-dollar-sign"></i> ${item['活動費用']}<br>
+                <i class="fas fa-clipboard-list"></i> ${item['活動內容']}<br>
+                <i class="fas fa-exclamation-triangle"></i> 注意事項：<br><small>${item['注意事項'].replaceAll('；', '<br>')}</small>
               </p>
-              <button class="btn btn-success signupBtn" data-title="${item['活動名稱']}" data-bs-toggle="modal" data-bs-target="#signupModal">我要報名</button>
+              <button class="btn btn-${expired ? 'secondary' : 'success'} signupBtn" data-title="${item['活動名稱']}" ${disableBtn} data-bs-toggle="modal" data-bs-target="#signupModal">
+                ${btnText}
+              </button>
             </div>
           </div>
         </div>
       `);
     });
 
-    // 點擊「我要報名」時設定活動名稱
     $('.signupBtn').on('click', function () {
-      $('#活動名稱').val($(this).data('title'));
+      if (!$(this).prop('disabled')) {
+        $('#活動名稱').val($(this).data('title'));
+      }
     });
   });
 
-  // 報名表單送出
   $('#signupForm').submit(function (e) {
     e.preventDefault();
     const postData = {
@@ -104,6 +117,7 @@ $(function () {
   });
 });
 </script>
+
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
