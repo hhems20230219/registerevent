@@ -3,64 +3,63 @@
 <head>
   <meta charset="UTF-8">
   <title>活動報名系統</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
 </head>
 <body class="p-4">
   <div class="container">
-    <h2 class="mb-4">📋 活動列表</h2>
+    <h2 class="mb-4">📋 活動卡片列表</h2>
     <div class="row" id="cardContainer"></div>
   </div>
 
   <script>
-    const scriptUrl = 'https://script.google.com/macros/s/你的GAS網址/exec';
+    const scriptUrl = "https://script.google.com/macros/s/你的GAS網址/exec";
 
-    // 取得活動卡片
-    $.get(scriptUrl, function (data) {
-      const cards = typeof data === 'string' ? JSON.parse(data) : data;
+    // 讀取活動卡片
+    $.get(scriptUrl, function (res) {
+      const cards = typeof res === 'string' ? JSON.parse(res) : res;
+
+      if (!cards || cards.length === 0) {
+        $('#cardContainer').html('<div class="alert alert-warning">目前沒有活動。</div>');
+        return;
+      }
 
       cards.forEach(card => {
-        const cardHtml = `
+        const html = `
           <div class="col-md-6 mb-4">
-            <div class="card shadow-sm h-100">
+            <div class="card h-100 shadow-sm">
               <div class="card-body">
                 <h5 class="card-title">${card["活動名稱"]}</h5>
-                <p class="card-text"><strong>📅 時間：</strong>${card["起始日期"]} ${card["起始時間"]} - ${card["結束時間"]}</p>
-                <p class="card-text"><strong>📍 地點：</strong>${card["活動地點"]}</p>
-                <p class="card-text"><strong>💰 費用：</strong>${card["活動費用"]}</p>
-                <button class="btn btn-success registerBtn" data-event="${card["活動名稱"]}">我要報名</button>
-                <div class="mt-2 response-area"></div>
+                <p><strong>📅 時間：</strong>${card["起始日期"]} ${card["起始時間"]} - ${card["結束時間"]}</p>
+                <p><strong>📍 地點：</strong>${card["活動地點"]}</p>
+                <p><strong>💰 費用：</strong>${card["活動費用"]}</p>
+                <p><strong>📘 活動內容：</strong>${card["活動內容"] || "無"}</p>
+                <p><strong>⚠️ 注意事項：</strong><br>${(card["注意事項"] || "").replaceAll("；", "<br>")}</p>
+                <button class="btn btn-primary register-btn" data-event="${card["活動名稱"]}">我要報名</button>
+                <div class="mt-2 response"></div>
               </div>
             </div>
           </div>
         `;
-        $('#cardContainer').append(cardHtml);
+        $('#cardContainer').append(html);
       });
 
       // 綁定報名事件
-      $('.registerBtn').click(function () {
+      $(document).on('click', '.register-btn', function () {
         const eventName = $(this).data('event');
-        const $response = $(this).siblings('.response-area');
         const name = prompt("請輸入您的姓名");
+        const $response = $(this).siblings('.response');
         if (!name) return;
 
         $.get(scriptUrl, {
           name: name,
-          event: eventName,
-          status: "已報名"
-        }, function (data) {
-          const matched = (typeof data === 'string' ? JSON.parse(data) : data).find(item => item["活動名稱"] === eventName);
-          if (matched) {
-            $response.html(`
-              <div class="alert alert-success">
-                ✅ ${name} 已報名！<br>
-                <strong>活動內容：</strong>${matched["活動內容"]}<br>
-                <strong>注意事項：</strong><br>${(matched["注意事項"] || "").replaceAll("；", "<br>")}
-              </div>
-            `);
+          event: eventName
+        }, function (res) {
+          const result = typeof res === 'string' ? JSON.parse(res) : res;
+          if (result.success) {
+            $response.html(`<div class="alert alert-success">🎉 ${name} 報名成功！</div>`);
           } else {
-            $response.html(`<div class="alert alert-danger">找不到活動資料</div>`);
+            $response.html(`<div class="alert alert-danger">⚠️ 報名失敗</div>`);
           }
         });
       });
