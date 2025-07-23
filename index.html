@@ -3,19 +3,19 @@
 <head>
   <meta charset="UTF-8">
   <title>活動報名系統</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
 </head>
 <body class="p-4">
   <div class="container">
-    <h2 class="mb-4">📋 活動卡片列表</h2>
-    <div class="row" id="cardContainer"></div>
+    <h2 class="mb-4">📋 活動列表</h2>
+    <div class="row row-cols-1 row-cols-sm-2 row-cols-md-4 g-4" id="cardContainer"></div>
   </div>
 
   <script>
-    const scriptUrl = "https://script.google.com/macros/s/AKfycbxxktlby_qGXdohK2nBd1ide0H6Ujlak_m4khaih_j9Ys-jFnqtHfHcmm7spOpNjl8U/exec";
+    const scriptUrl = "https://script.google.com/macros/s/AKfycbxXxqRXktdKBnMtAsLKTRNK9cDbqV9WC4BoA8XcJHBPRSAJu6lWviYUo1aXuzPLYFMf/exec";
 
-    // 讀取活動卡片
     $.get(scriptUrl, function (res) {
       const cards = typeof res === 'string' ? JSON.parse(res) : res;
 
@@ -25,18 +25,27 @@
       }
 
       cards.forEach(card => {
+        // 不顯示活動內容欄位時就不產生那一段
+        const activityContentHtml = card["活動內容"]
+          ? `<p><strong>📘 活動內容：</strong>${card["活動內容"]}</p>` : "";
+
         const html = `
-          <div class="col-md-6 mb-4">
+          <div class="col">
             <div class="card h-100 shadow-sm">
-              <div class="card-body">
-                <h5 class="card-title">${card["活動名稱"]}</h5>
-                <p><strong>📅 時間：</strong>${card["起始日期"]} ${card["起始時間"]} - ${card["結束時間"]}</p>
-                <p><strong>📍 地點：</strong>${card["活動地點"]}</p>
-                <p><strong>💰 費用：</strong>${card["活動費用"]}</p>
-                <p><strong>📘 活動內容：</strong>${card["活動內容"] || "無"}</p>
-                <p><strong>⚠️ 注意事項：</strong><br>${(card["注意事項"] || "").replaceAll("；", "<br>")}</p>
-                <button class="btn btn-primary register-btn" data-event="${card["活動名稱"]}">我要報名</button>
-                <div class="mt-2 response"></div>
+              <div class="card-body d-flex flex-column justify-content-between">
+                <div>
+                  <h5 class="card-title">${card["活動名稱"]}</h5>
+                  <p><strong>📅 日期：</strong>${card["起始日期"]} ${card["起始時間"]} - ${card["結束時間"]}</p>
+                  <p><strong>📍 地點：</strong>${card["活動地點"]}</p>
+                  <p><strong>💰 費用：</strong>${card["活動費用"]}</p>
+                  ${activityContentHtml}
+                  <p><strong>⚠️ 注意事項：</strong><br>${(card["注意事項"] || "").replaceAll("；", "<br>")}</p>
+                </div>
+                <div>
+                  <button class="btn btn-success btn-sm register-btn me-2 mt-2" data-event="${card["活動名稱"]}" data-status="已報名">報名參加</button>
+                  <button class="btn btn-danger btn-sm register-btn mt-2" data-event="${card["活動名稱"]}" data-status="不克參加">不克參加</button>
+                  <div class="response mt-2"></div>
+                </div>
               </div>
             </div>
           </div>
@@ -44,22 +53,24 @@
         $('#cardContainer').append(html);
       });
 
-      // 綁定報名事件
+      // 綁定報名與不克參加事件
       $(document).on('click', '.register-btn', function () {
         const eventName = $(this).data('event');
+        const status = $(this).data('status');
         const name = prompt("請輸入您的姓名");
         const $response = $(this).siblings('.response');
         if (!name) return;
 
         $.get(scriptUrl, {
           name: name,
-          event: eventName
+          event: eventName,
+          status: status
         }, function (res) {
           const result = typeof res === 'string' ? JSON.parse(res) : res;
           if (result.success) {
-            $response.html(`<div class="alert alert-success">🎉 ${name} 報名成功！</div>`);
+            $response.html(`<div class="alert alert-success">✅ ${name} ${status} 成功</div>`);
           } else {
-            $response.html(`<div class="alert alert-danger">⚠️ 報名失敗</div>`);
+            $response.html(`<div class="alert alert-danger">❌ 報名失敗</div>`);
           }
         });
       });
