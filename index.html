@@ -2,153 +2,69 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="UTF-8">
-  <title>高雄市義勇消防總隊第一救護大隊新興分隊活動報名系統</title>
+  <title>活動報名系統</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
   <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
 </head>
-<body class="bg-light py-4">
+<body class="p-4">
   <div class="container">
-    <nav class="navbar navbar-expand-lg bg-body-tertiary mb-4 shadow-sm border rounded">
-      <div class="container-fluid">
-        <a class="navbar-brand" href="#">
-          <i class="fa-solid fa-calendar-days me-2"></i>活動報名系統
-        </a>
-      </div>
-    </nav>
-
-    <div class="mb-4">
-      <div class="input-group">
-        <span class="input-group-text"><i class="fa-solid fa-search"></i></span>
-        <input type="text" id="searchInput" class="form-control fs-5" placeholder="搜尋活動名稱、內容、地點...">
-      </div>
-    </div>
-
-    <div id="loadingMessage" class="text-center my-4 text-secondary fs-5">
-      <div class="spinner-border text-primary" role="status">
-        <span class="visually-hidden">載入中...</span>
-      </div>
-      <div class="mt-2">活動資料載入中，請稍候...</div>
-    </div>
-
-    <div class="row" id="cards"></div>
-  </div>
-
-  <!-- 報名 / 不克參加 Modal -->
-  <div class="modal fade" id="signupModal" tabindex="-1">
-    <div class="modal-dialog">
-      <div class="modal-content">
-        <form id="signupForm">
-          <div class="modal-header">
-            <h5 class="modal-title" id="modalTitle">我要報名</h5>
-            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-          </div>
-          <div class="modal-body">
-            <input type="hidden" id="活動名稱">
-            <input type="hidden" id="報名狀態">
-            <div class="mb-3">
-              <label class="form-label">姓名</label>
-              <input type="text" class="form-control" id="姓名" required>
-            </div>
-            <div class="mb-3">
-              <label class="form-label">備註</label>
-              <input type="text" class="form-control" id="備註">
-            </div>
-          </div>
-          <div class="modal-footer">
-            <button type="submit" class="btn btn-primary">送出</button>
-          </div>
-        </form>
-      </div>
-    </div>
+    <h2 class="mb-4">📋 活動列表</h2>
+    <div class="row" id="cardContainer"></div>
   </div>
 
   <script>
-    const apiUrl = "https://script.google.com/macros/s/AKfycbxxktlby_qGXdohK2nBd1ide0H6Ujlak_m4khaih_j9Ys-jFnqtHfHcmm7spOpNjl8U/exec";
+    const scriptUrl = 'https://script.google.com/macros/s/你的GAS網址/exec';
 
-    function isExpired(dateStr) {
-      const now = new Date();
-      const deadline = new Date(dateStr);
-      deadline.setHours(23, 59, 59);
-      return now > deadline;
-    }
+    // 取得活動卡片
+    $.get(scriptUrl, function (data) {
+      const cards = typeof data === 'string' ? JSON.parse(data) : data;
 
-    $(function () {
-      $.getJSON(apiUrl, function (data) {
-        $('#cards').empty();
-        data.forEach(item => {
-          const expired = isExpired(item['截止日期']);
-          const disableBtn = expired ? 'disabled' : '';
-          const joinBtnText = expired ? '已截止' : '我要報名';
-          const cancelBtnText = expired ? '已截止' : '不克參加';
-
-          $('#cards').append(`
-            <div class="col-md-4 mb-4">
-              <div class="card h-100 shadow">
-                <div class="card-body d-flex flex-column">
-                  <h5 class="card-title"><i class="fas fa-book"></i> ${item['活動名稱']}</h5>
-                  <p class="card-text">
-                    <i class="far fa-calendar-alt"></i> ${item['起始日期']} ${item['起始時間']} ~ ${item['結束日期']} ${item['結束時間']}<br>
-                    <i class="fas fa-hourglass-end"></i> 截止：${item['截止日期']}<br>
-                    <i class="fas fa-map-marker-alt"></i> ${item['活動地點']}<br>
-                    <i class="fas fa-dollar-sign"></i> ${item['活動費用']}<br>
-                    <i class="fas fa-clipboard-list"></i> ${item['活動內容']}<br>
-                    <i class="fas fa-exclamation-triangle"></i> 注意事項：<br><small>${item['注意事項'].replaceAll('；', '<br>')}</small>
-                  </p>
-                  <div class="mt-auto">
-                    <button class="btn btn-success w-100 mb-2 signupBtn" data-title="${item['活動名稱']}" data-status="已報名" ${disableBtn}>
-                      <i class="fa-solid fa-circle-check me-1"></i>${joinBtnText}
-                    </button>
-                    <button class="btn btn-danger w-100 signupBtn" data-title="${item['活動名稱']}" data-status="不克參加" ${disableBtn}>
-                      <i class="fa-solid fa-circle-xmark me-1"></i>${cancelBtnText}
-                    </button>
-                  </div>
-                </div>
+      cards.forEach(card => {
+        const cardHtml = `
+          <div class="col-md-6 mb-4">
+            <div class="card shadow-sm h-100">
+              <div class="card-body">
+                <h5 class="card-title">${card["活動名稱"]}</h5>
+                <p class="card-text"><strong>📅 時間：</strong>${card["起始日期"]} ${card["起始時間"]} - ${card["結束時間"]}</p>
+                <p class="card-text"><strong>📍 地點：</strong>${card["活動地點"]}</p>
+                <p class="card-text"><strong>💰 費用：</strong>${card["活動費用"]}</p>
+                <button class="btn btn-success registerBtn" data-event="${card["活動名稱"]}">我要報名</button>
+                <div class="mt-2 response-area"></div>
               </div>
             </div>
-          `);
-        });
-
-        $('.signupBtn').on('click', function () {
-          if (!$(this).prop('disabled')) {
-            $('#活動名稱').val($(this).data('title'));
-            $('#報名狀態').val($(this).data('status'));
-            $('#modalTitle').text(`${$(this).data('title')}｜${$(this).data('status')}`);
-            new bootstrap.Modal(document.querySelector('#signupModal')).show();
-          }
-        });
+          </div>
+        `;
+        $('#cardContainer').append(cardHtml);
       });
 
-      $('#signupForm').submit(function (e) {
-        e.preventDefault();
-        const postData = {
-          name: $('#姓名').val(),
-          event: $('#活動名稱').val(),
-          note: $('#備註').val(),
-          status: $('#報名狀態').val()
-        };
+      // 綁定報名事件
+      $('.registerBtn').click(function () {
+        const eventName = $(this).data('event');
+        const $response = $(this).siblings('.response-area');
+        const name = prompt("請輸入您的姓名");
+        if (!name) return;
 
-        $.ajax({
-          url: apiUrl,
-          method: 'GET',
-          data: postData,
-          success: function (res) {
-            if (res === "成功") {
-              alert("送出成功！");
-              bootstrap.Modal.getInstance(document.querySelector('#signupModal')).hide();
-              $('#signupForm')[0].reset();
-            } else {
-              alert("錯誤：" + res);
-            }
-          },
-          error: function () {
-            alert("傳送失敗，請稍後再試");
+        $.get(scriptUrl, {
+          name: name,
+          event: eventName,
+          status: "已報名"
+        }, function (data) {
+          const matched = (typeof data === 'string' ? JSON.parse(data) : data).find(item => item["活動名稱"] === eventName);
+          if (matched) {
+            $response.html(`
+              <div class="alert alert-success">
+                ✅ ${name} 已報名！<br>
+                <strong>活動內容：</strong>${matched["活動內容"]}<br>
+                <strong>注意事項：</strong><br>${(matched["注意事項"] || "").replaceAll("；", "<br>")}
+              </div>
+            `);
+          } else {
+            $response.html(`<div class="alert alert-danger">找不到活動資料</div>`);
           }
         });
       });
     });
   </script>
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
